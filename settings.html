@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Zerim Settings - Customize your to-do list experience">
+    <title>Zerim - Settings</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="theme-default">
+    <div class="app-container settings-page">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <a href="index.html" class="back-btn" title="Back to Tasks">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="logo-container">
+                    <i class="fas fa-cog logo-icon"></i>
+                    <h1>Settings</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="reset-settings" class="icon-btn danger" title="Reset All Settings">
+                    <i class="fas fa-undo"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Settings Navigation -->
+        <nav class="settings-nav">
+            <button class="nav-btn active" data-section="appearance">
+                <i class="fas fa-palette"></i>
+                <span>Appearance</span>
+            </button>
+            <button class="nav-btn" data-section="behavior">
+                <i class="fas fa-cogs"></i>
+                <span>Behavior</span>
+            </button>
+            <button class="nav-btn" data-section="notifications">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+            </button>
+            <button class="nav-btn" data-section="data">
+                <i class="fas fa-database"></i>
+                <span>Data</span>
+            </button>
+            <button class="nav-btn" data-section="advanced">
+                <i class="fas fa-tools"></i>
+                <span>Advanced</span>
+            </button>
+        </nav>
+
+        <!-- Settings Sections -->
+        <main class="settings-main">
+            <!-- Appearance Settings -->
+            <section id="appearance-section" class="settings-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-palette"></i> Appearance</h2>
+                    <p>Customize the look and feel of your to-do list</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Theme</h3>
+                    <div class="theme-selector">
+                        <div class="theme-option" data-theme="default">
+                            <div class="theme-preview theme-default-preview"></div>
+                            <span>Default</span>
+                        </div>
+                        <div class="theme-option" data-theme="dark">
+                            <div class="theme-preview theme-dark-preview"></div>
+                            <span>Dark</span>
+                        </div>
+                        <div class="theme-option" data-theme="light">
+                            <div class="theme-preview theme-light-preview"></div>
+                            <span>Light</span>
+                        </div>
+                        <div class="theme-option" data-theme="nord">
+                            <div class="theme-preview theme-nord-preview"></div>
+                            <span>Nord</span>
+                        </div>
+                        <div class="theme-option" data-theme="solarized">
+                            <div class="theme-preview theme-solarized-preview"></div>
+                            <span>Solarized</span>
+                        </div>
+                        <div class="theme-option" data-theme="pink">
+                            <div class="theme-preview theme-pink-preview"></div>
+                            <span>Pink</span>
+                        </div>
+                        <div class="theme-option" data-theme="teal">
+                            <div class="theme-preview theme-teal-preview"></div>
+                            <span>Teal</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Display Options</h3>
+                    <div class="setting-item">
+                        <label for="font-size">Font Size</label>
+                        <select id="font-size">
+                            <option value="small">Small</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="large">Large</option>
+                            <option value="extra-large">Extra Large</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="density">List Density</label>
+                        <select id="density">
+                            <option value="compact">Compact</option>
+                            <option value="comfortable" selected>Comfortable</option>
+                            <option value="spacious">Spacious</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="animations-enabled" checked>
+                            <span class="checkmark"></span>
+                            Enable animations
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="reduced-motion">
+                            <span class="checkmark"></span>
+                            Reduce motion for accessibility
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="show-task-icons" checked>
+                            <span class="checkmark"></span>
+                            Show category icons
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Task Display</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="show-completed-tasks" checked>
+                            <span class="checkmark"></span>
+                            Show completed tasks
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="show-task-numbers" checked>
+                            <span class="checkmark"></span>
+                            Show task numbers
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="show-creation-date">
+                            <span class="checkmark"></span>
+                            Show creation date
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="show-priority-colors" checked>
+                            <span class="checkmark"></span>
+                            Show priority colors
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Behavior Settings -->
+            <section id="behavior-section" class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cogs"></i> Behavior</h2>
+                    <p>Configure how the application behaves</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Task Management</h3>
+                    <div class="setting-item">
+                        <label for="default-priority">Default Priority</label>
+                        <select id="default-priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="default-category">Default Category</label>
+                        <select id="default-category">
+                            <option value="">No Category</option>
+                            <option value="work">Work</option>
+                            <option value="personal" selected>Personal</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="health">Health</option>
+                            <option value="learning">Learning</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="auto-add-time" checked>
+                            <span class="checkmark"></span>
+                            Auto-detect time in task titles
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="confirm-delete" checked>
+                            <span class="checkmark"></span>
+                            Confirm before deleting tasks
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="auto-complete-subtasks">
+                            <span class="checkmark"></span>
+                            Auto-complete parent task when all subtasks are done
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Sorting and Filtering</h3>
+                    <div class="setting-item">
+                        <label for="default-sort">Default Sort Order</label>
+                        <select id="default-sort">
+                            <option value="created-desc" selected>Newest First</option>
+                            <option value="created-asc">Oldest First</option>
+                            <option value="due-asc">Due Date (Earliest)</option>
+                            <option value="priority-desc">Priority (High to Low)</option>
+                            <option value="alphabetical">Alphabetical</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="default-filter">Default Filter</label>
+                        <select id="default-filter">
+                            <option value="all" selected>All Tasks</option>
+                            <option value="pending">Pending Only</option>
+                            <option value="today">Due Today</option>
+                            <option value="this-week">This Week</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="remember-filters" checked>
+                            <span class="checkmark"></span>
+                            Remember filter settings
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="enable-shortcuts" checked>
+                            <span class="checkmark"></span>
+                            Enable keyboard shortcuts
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="vim-mode">
+                            <span class="checkmark"></span>
+                            Enable Vim-style navigation
+                        </label>
+                    </div>
+
+                    <button id="customize-shortcuts" class="btn secondary">
+                        <i class="fas fa-keyboard"></i>
+                        Customize Shortcuts
+                    </button>
+                </div>
+            </section>
+
+            <!-- Notifications Settings -->
+            <section id="notifications-section" class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-bell"></i> Notifications</h2>
+                    <p>Manage reminders and notifications</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Browser Notifications</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="enable-notifications">
+                            <span class="checkmark"></span>
+                            Enable browser notifications
+                        </label>
+                    </div>
+
+                    <div class="notification-permission" id="notification-permission" style="display: none;">
+                        <p class="warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Notifications are blocked. Click to enable in your browser settings.
+                        </p>
+                        <button id="request-permission" class="btn primary">
+                            Enable Notifications
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Reminder Settings</h3>
+                    <div class="setting-item">
+                        <label for="default-reminder">Default Reminder Time</label>
+                        <select id="default-reminder">
+                            <option value="0">At due time</option>
+                            <option value="5">5 minutes before</option>
+                            <option value="15" selected>15 minutes before</option>
+                            <option value="30">30 minutes before</option>
+                            <option value="60">1 hour before</option>
+                            <option value="1440">1 day before</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="daily-summary" checked>
+                            <span class="checkmark"></span>
+                            Daily summary notification
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="summary-time">Daily Summary Time</label>
+                        <input type="time" id="summary-time" value="09:00">
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="overdue-reminders" checked>
+                            <span class="checkmark"></span>
+                            Remind about overdue tasks
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Sound Settings</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="notification-sounds" checked>
+                            <span class="checkmark"></span>
+                            Play notification sounds
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="notification-volume">Notification Volume</label>
+                        <input type="range" id="notification-volume" min="0" max="100" value="50">
+                        <span class="range-value">50%</span>
+                    </div>
+
+                    <button id="test-sound" class="btn secondary">
+                        <i class="fas fa-volume-up"></i>
+                        Test Sound
+                    </button>
+                </div>
+            </section>
+
+            <!-- Data Settings -->
+            <section id="data-section" class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-database"></i> Data Management</h2>
+                    <p>Manage your data, backups, and storage</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Auto-save</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="auto-save" checked>
+                            <span class="checkmark"></span>
+                            Auto-save changes
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="save-interval">Save Interval</label>
+                        <select id="save-interval">
+                            <option value="1">Every minute</option>
+                            <option value="5" selected>Every 5 minutes</option>
+                            <option value="10">Every 10 minutes</option>
+                            <option value="30">Every 30 minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Backup and Sync</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="auto-backup" checked>
+                            <span class="checkmark"></span>
+                            Automatic daily backups
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="backup-retention">Keep Backups For</label>
+                        <select id="backup-retention">
+                            <option value="7">1 week</option>
+                            <option value="30" selected>1 month</option>
+                            <option value="90">3 months</option>
+                            <option value="365">1 year</option>
+                        </select>
+                    </div>
+
+                    <div class="backup-actions">
+                        <button id="create-backup" class="btn primary">
+                            <i class="fas fa-download"></i>
+                            Create Backup Now
+                        </button>
+                        <button id="restore-backup" class="btn secondary">
+                            <i class="fas fa-upload"></i>
+                            Restore from Backup
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Storage Information</h3>
+                    <div class="storage-info">
+                        <div class="storage-item">
+                            <span>Total Tasks:</span>
+                            <span id="total-tasks-count">0</span>
+                        </div>
+                        <div class="storage-item">
+                            <span>Completed Tasks:</span>
+                            <span id="completed-tasks-count">0</span>
+                        </div>
+                        <div class="storage-item">
+                            <span>Storage Used:</span>
+                            <span id="storage-used">0 KB</span>
+                        </div>
+                        <div class="storage-item">
+                            <span>Last Backup:</span>
+                            <span id="last-backup">Never</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group danger-zone">
+                    <h3>Danger Zone</h3>
+                    <div class="danger-actions">
+                        <button id="clear-completed" class="btn danger">
+                            <i class="fas fa-broom"></i>
+                            Clear All Completed Tasks
+                        </button>
+                        <button id="reset-all-data" class="btn danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Reset All Data
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Advanced Settings -->
+            <section id="advanced-section" class="settings-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-tools"></i> Advanced</h2>
+                    <p>Advanced configuration options</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Performance</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="lazy-loading" checked>
+                            <span class="checkmark"></span>
+                            Enable lazy loading for large lists
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <label for="max-tasks-display">Maximum Tasks to Display</label>
+                        <select id="max-tasks-display">
+                            <option value="50">50 tasks</option>
+                            <option value="100" selected>100 tasks</option>
+                            <option value="200">200 tasks</option>
+                            <option value="500">500 tasks</option>
+                            <option value="0">No limit</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="preload-images">
+                            <span class="checkmark"></span>
+                            Preload images and icons
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Development</h3>
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="debug-mode">
+                            <span class="checkmark"></span>
+                            Enable debug mode
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="console-logging">
+                            <span class="checkmark"></span>
+                            Enable console logging
+                        </label>
+                    </div>
+
+                    <button id="export-debug-info" class="btn secondary">
+                        <i class="fas fa-bug"></i>
+                        Export Debug Information
+                    </button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Experimental Features</h3>
+                    <div class="experimental-warning">
+                        <i class="fas fa-flask"></i>
+                        <p>These features are experimental and may not work as expected.</p>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="ai-suggestions">
+                            <span class="checkmark"></span>
+                            AI-powered task suggestions (Beta)
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="voice-input">
+                            <span class="checkmark"></span>
+                            Voice input for tasks (Experimental)
+                        </label>
+                    </div>
+
+                    <div class="setting-item checkbox">
+                        <label>
+                            <input type="checkbox" id="gesture-controls">
+                            <span class="checkmark"></span>
+                            Gesture controls (Touch devices)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Reset Options</h3>
+                    <div class="reset-actions">
+                        <button id="reset-appearance" class="btn secondary">
+                            <i class="fas fa-palette"></i>
+                            Reset Appearance Settings
+                        </button>
+                        <button id="reset-behavior" class="btn secondary">
+                            <i class="fas fa-cogs"></i>
+                            Reset Behavior Settings
+                        </button>
+                        <button id="reset-all-settings" class="btn danger">
+                            <i class="fas fa-undo-alt"></i>
+                            Reset All Settings
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Save Indicator -->
+        <div id="save-indicator" class="save-indicator">
+            <i class="fas fa-check"></i>
+            <span>Settings saved</span>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="confirm-title">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-cancel" class="btn secondary">Cancel</button>
+                <button id="confirm-action" class="btn danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/settings.js"></script>
+</body>
+</html>

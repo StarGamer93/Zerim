@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Zerim - A feature-rich, offline-first to-do list web application">
+    <meta name="author" content="StarGamer93-official">
+    <meta name="theme-color" content="#4facfe">
+    <title>Zerim - Advanced To-Do List</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="theme-default">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <h2>Loading Zerim...</h2>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-container">
+                    <i class="fas fa-tasks logo-icon"></i>
+                    <h1>Zerim</h1>
+                </div>
+                <div class="app-status">
+                    <span id="status-indicator" class="status-online">
+                        <i class="fas fa-circle"></i> Offline Ready
+                    </span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="search-toggle" class="icon-btn" title="Search (Ctrl+F)">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button id="analytics-btn" class="icon-btn" title="Analytics">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+                <button id="settings-btn" class="icon-btn" title="Settings (Ctrl+,)">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button id="menu-toggle" class="icon-btn mobile-only" title="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div id="search-container" class="search-container hidden">
+            <div class="search-input-group">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search tasks, categories, or tags..." autocomplete="off">
+                <button id="search-clear" class="clear-btn" title="Clear search">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="search-filters">
+                <button class="filter-chip active" data-filter="all">All</button>
+                <button class="filter-chip" data-filter="title">Title</button>
+                <button class="filter-chip" data-filter="category">Category</button>
+                <button class="filter-chip" data-filter="tags">Tags</button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-card">
+                <i class="fas fa-tasks"></i>
+                <div class="stat-content">
+                    <span class="stat-number" id="total-tasks">0</span>
+                    <span class="stat-label">Total</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-clock"></i>
+                <div class="stat-content">
+                    <span class="stat-number" id="pending-tasks">0</span>
+                    <span class="stat-label">Pending</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle"></i>
+                <div class="stat-content">
+                    <span class="stat-number" id="completed-tasks">0</span>
+                    <span class="stat-label">Done</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-calendar-alt"></i>
+                <div class="stat-content">
+                    <span class="stat-number" id="due-today">0</span>
+                    <span class="stat-label">Due Today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Input Section -->
+        <section class="task-input-section">
+            <div class="input-container">
+                <div class="main-input-group">
+                    <input type="text" id="task-title" placeholder="What needs to be done? (Ctrl+N)" maxlength="500" autocomplete="off">
+                    <button id="add-task-btn" class="add-btn" title="Add Task (Enter)">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <div class="task-details" id="task-details">
+                    <div class="detail-row">
+                        <div class="detail-group">
+                            <label for="task-category">Category</label>
+                            <select id="task-category" name="category">
+                                <option value="">No Category</option>
+                            </select>
+                        </div>
+                        <div class="detail-group">
+                            <label for="task-priority">Priority</label>
+                            <select id="task-priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-group full-width">
+                            <label>Due Date & Time</label>
+                            <div id="task-due-date-container" class="datetime-picker-container"></div>
+                            <input type="hidden" id="task-due-date" name="dueDate">
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-group full-width">
+                            <label for="task-tags">Tags (comma separated)</label>
+                            <input type="text" id="task-tags" placeholder="urgent, meeting, important">
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-group full-width">
+                            <label for="task-description">Description</label>
+                            <textarea id="task-description" placeholder="Additional details about this task..." rows="3" maxlength="1000"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button id="toggle-recurring" class="toggle-btn" title="Recurring Task">
+                            <i class="fas fa-redo"></i>
+                            <span>Recurring</span>
+                        </button>
+                        <button id="toggle-reminder" class="toggle-btn" title="Set Reminder">
+                            <i class="fas fa-bell"></i>
+                            <span>Reminder</span>
+                        </button>
+                        <button id="manage-categories" class="toggle-btn" title="Manage Categories">
+                            <i class="fas fa-tags"></i>
+                            <span>Categories</span>
+                        </button>
+                        <button id="collapse-details" class="collapse-btn" title="Hide Details">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="expand-details" class="expand-btn" title="Show More Options">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>More Options</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Filters and Controls -->
+        <section class="controls-section">
+            <div class="filter-controls">
+                <div class="view-controls">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i>
+                        <span>All</span>
+                    </button>
+                    <button class="filter-btn" data-filter="pending">
+                        <i class="fas fa-clock"></i>
+                        <span>Pending</span>
+                    </button>
+                    <button class="filter-btn" data-filter="completed">
+                        <i class="fas fa-check"></i>
+                        <span>Completed</span>
+                    </button>
+                    <button class="filter-btn" data-filter="overdue">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Overdue</span>
+                    </button>
+                </div>
+
+                <div class="sort-controls">
+                    <select id="sort-by" title="Sort by">
+                        <option value="created-desc">Newest First</option>
+                        <option value="created-asc">Oldest First</option>
+                        <option value="due-asc">Due Date (Earliest)</option>
+                        <option value="due-desc">Due Date (Latest)</option>
+                        <option value="priority-desc">Priority (High to Low)</option>
+                        <option value="priority-asc">Priority (Low to High)</option>
+                        <option value="alphabetical">Alphabetical</option>
+                    </select>
+                </div>
+
+                <div class="bulk-controls">
+                    <button id="select-all" class="control-btn" title="Select All (Ctrl+A)">
+                        <i class="fas fa-check-square"></i>
+                    </button>
+                    <button id="bulk-complete" class="control-btn" title="Complete Selected" disabled>
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button id="bulk-delete" class="control-btn danger" title="Delete Selected" disabled>
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="category-filter">
+                <div class="category-chips" id="category-filter">
+                    <button class="category-chip active" data-category="">All Categories</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Task List -->
+        <main class="task-list-container">
+            <div id="task-list" class="task-list">
+                <!-- Tasks will be rendered here -->
+            </div>
+
+            <div id="empty-state" class="empty-state">
+                <div class="empty-illustration">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h3>No tasks yet</h3>
+                <p>Create your first task to get started with Zerim</p>
+                <button class="create-first-task-btn">
+                    <i class="fas fa-plus"></i>
+                    Create Task
+                </button>
+            </div>
+
+            <div id="no-results" class="empty-state" style="display: none;">
+                <div class="empty-illustration">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>No tasks found</h3>
+                <p>Try adjusting your search or filters</p>
+                <button id="clear-filters-btn" class="clear-filters-btn">
+                    <i class="fas fa-times"></i>
+                    Clear Filters
+                </button>
+            </div>
+        </main>
+
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <button id="scroll-top" class="fab secondary" title="Scroll to Top">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <button id="quick-add" class="fab primary" title="Quick Add Task (Ctrl+N)">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Task Edit Modal -->
+    <div id="task-edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Task</h3>
+                <button class="close-btn" data-modal="task-edit-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-task-form">
+                    <div class="form-group">
+                        <label for="edit-task-title">Title</label>
+                        <input type="text" id="edit-task-title" required maxlength="500">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-task-category">Category</label>
+                            <select id="edit-task-category">
+                                <option value="">No Category</option>
+                                <option value="work">Work</option>
+                                <option value="personal">Personal</option>
+                                <option value="shopping">Shopping</option>
+                                <option value="health">Health</option>
+                                <option value="learning">Learning</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-priority">Priority</label>
+                            <select id="edit-task-priority">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-task-due-date">Due Date</label>
+                            <input type="date" id="edit-task-due-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-due-time">Due Time</label>
+                            <input type="time" id="edit-task-due-time">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-task-tags">Tags</label>
+                        <input type="text" id="edit-task-tags" placeholder="urgent, meeting, important">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-task-description">Description</label>
+                        <textarea id="edit-task-description" rows="4" maxlength="1000"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn secondary" data-modal="task-edit-modal">Cancel</button>
+                <button type="submit" form="edit-task-form" class="btn primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import/Export Modal -->
+    <div id="import-export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import / Export Data</h3>
+                <button class="close-btn" data-modal="import-export-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="import-export-section">
+                    <h4><i class="fas fa-download"></i> Export Data</h4>
+                    <p>Download your tasks as a JSON file for backup or transfer.</p>
+                    <div class="export-options">
+                        <label>
+                            <input type="checkbox" id="export-completed" checked>
+                            Include completed tasks
+                        </label>
+                        <label>
+                            <input type="checkbox" id="export-settings" checked>
+                            Include app settings
+                        </label>
+                    </div>
+                    <button id="export-btn" class="btn primary">
+                        <i class="fas fa-download"></i>
+                        Export Data
+                    </button>
+                </div>
+
+                <div class="import-export-section">
+                    <h4><i class="fas fa-upload"></i> Import Data</h4>
+                    <p>Upload a previously exported JSON file to restore your data.</p>
+                    <div class="file-input-container">
+                        <input type="file" id="import-file" accept=".json" style="display: none;">
+                        <button id="import-file-btn" class="btn secondary">
+                            <i class="fas fa-file-upload"></i>
+                            Choose File
+                        </button>
+                        <span id="import-file-name">No file selected</span>
+                    </div>
+                    <div class="import-options">
+                        <label>
+                            <input type="radio" name="import-mode" value="merge" checked>
+                            Merge with existing data
+                        </label>
+                        <label>
+                            <input type="radio" name="import-mode" value="replace">
+                            Replace all existing data
+                        </label>
+                    </div>
+                    <button id="import-btn" class="btn primary" disabled>
+                        <i class="fas fa-upload"></i>
+                        Import Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div id="shortcuts-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Keyboard Shortcuts</h3>
+                <button class="close-btn" data-modal="shortcuts-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid">
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>N</kbd>
+                        <span>New Task</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                        <span>Search</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>,</kbd>
+                        <span>Settings</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>A</kbd>
+                        <span>Select All</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>D</kbd>
+                        <span>Delete Selected</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                        <span>Export Data</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                        <span>Import Data</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>?</kbd>
+                        <span>Show Shortcuts</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Esc</kbd>
+                        <span>Close Modal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

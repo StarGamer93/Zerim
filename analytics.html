@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Zerim Analytics - Track your productivity and task completion statistics">
+    <title>Zerim - Analytics</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+</head>
+<body class="theme-default">
+    <div class="app-container analytics-page">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <a href="index.html" class="back-btn" title="Back to Tasks">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="logo-container">
+                    <i class="fas fa-chart-bar logo-icon"></i>
+                    <h1>Analytics</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="export-analytics" class="icon-btn" title="Export Analytics">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="refresh-analytics" class="icon-btn" title="Refresh Data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Time Range Selector -->
+        <div class="time-range-selector">
+            <button class="range-btn active" data-range="7">Last 7 Days</button>
+            <button class="range-btn" data-range="30">Last 30 Days</button>
+            <button class="range-btn" data-range="90">Last 3 Months</button>
+            <button class="range-btn" data-range="365">Last Year</button>
+            <button class="range-btn" data-range="all">All Time</button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="analytics-summary">
+            <div class="summary-card">
+                <div class="card-icon productivity">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="completion-rate">0%</h3>
+                    <p>Completion Rate</p>
+                    <span class="trend" id="completion-trend">
+                        <i class="fas fa-arrow-up"></i> +5% vs last period
+                    </span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon tasks">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="total-completed">0</h3>
+                    <p>Tasks Completed</p>
+                    <span class="trend positive" id="completed-trend">
+                        <i class="fas fa-arrow-up"></i> +12 this week
+                    </span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon streak">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="current-streak">0</h3>
+                    <p>Day Streak</p>
+                    <span class="trend" id="streak-trend">
+                        <i class="fas fa-calendar"></i> Keep it up!
+                    </span>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon average">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="avg-completion-time">0h</h3>
+                    <p>Avg. Completion Time</p>
+                    <span class="trend" id="time-trend">
+                        <i class="fas fa-minus"></i> 15m faster
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-container">
+            <!-- Completion Rate Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Completion Rate Over Time</h3>
+                    <div class="chart-controls">
+                        <select id="completion-chart-type">
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="area">Area Chart</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="completion-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tasks by Category -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Tasks by Category</h3>
+                    <div class="chart-controls">
+                        <select id="category-chart-type">
+                            <option value="doughnut">Doughnut</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="bar">Bar Chart</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="category-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Priority Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Priority Distribution</h3>
+                    <div class="chart-legend" id="priority-legend"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priority-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Weekly Heatmap -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3><i class="fas fa-calendar"></i> Activity Heatmap</h3>
+                    <p>Task completion activity over the selected period</p>
+                </div>
+                <div class="heatmap-container" id="activity-heatmap">
+                    <!-- Heatmap will be generated here -->
+                </div>
+            </div>
+
+            <!-- Productivity Trends -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-trending-up"></i> Productivity Trends</h3>
+                    <div class="chart-controls">
+                        <select id="trend-metric">
+                            <option value="daily">Daily Average</option>
+                            <option value="weekly">Weekly Total</option>
+                            <option value="monthly">Monthly Total</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="productivity-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Time Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-clock"></i> Time Distribution</h3>
+                    <p>When you're most productive</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="time-distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Statistics -->
+        <div class="detailed-stats">
+            <div class="stats-section">
+                <h3><i class="fas fa-list"></i> Task Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Tasks Created:</span>
+                        <span class="stat-value" id="total-created">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Tasks Completed:</span>
+                        <span class="stat-value" id="total-done">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Currently Pending:</span>
+                        <span class="stat-value" id="current-pending">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Overdue Tasks:</span>
+                        <span class="stat-value" id="overdue-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Average Tasks per Day:</span>
+                        <span class="stat-value" id="avg-per-day">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Most Productive Day:</span>
+                        <span class="stat-value" id="best-day">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Longest Streak:</span>
+                        <span class="stat-value" id="longest-streak">0 days</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Most Used Category:</span>
+                        <span class="stat-value" id="top-category">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3><i class="fas fa-target"></i> Goals & Achievements</h3>
+                <div class="achievements-grid">
+                    <div class="achievement-item" data-achievement="first-task">
+                        <div class="achievement-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>First Task</h4>
+                            <p>Created your first task</p>
+                        </div>
+                        <div class="achievement-status unlocked">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+
+                    <div class="achievement-item" data-achievement="streak-7">
+                        <div class="achievement-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>Week Warrior</h4>
+                            <p>7-day completion streak</p>
+                        </div>
+                        <div class="achievement-status locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <div class="achievement-item" data-achievement="hundred-tasks">
+                        <div class="achievement-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>Century Club</h4>
+                            <p>Completed 100 tasks</p>
+                        </div>
+                        <div class="achievement-status locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <div class="achievement-item" data-achievement="category-master">
+                        <div class="achievement-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>Category Master</h4>
+                            <p>Used all categories</p>
+                        </div>
+                        <div class="achievement-status locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <div class="achievement-item" data-achievement="early-bird">
+                        <div class="achievement-icon">
+                            <i class="fas fa-sun"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>Early Bird</h4>
+                            <p>Complete tasks before 8 AM</p>
+                        </div>
+                        <div class="achievement-status locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <div class="achievement-item" data-achievement="perfectionist">
+                        <div class="achievement-icon">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <div class="achievement-content">
+                            <h4>Perfectionist</h4>
+                            <p>100% completion rate for a month</p>
+                        </div>
+                        <div class="achievement-status locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3><i class="fas fa-calendar-week"></i> Weekly Summary</h3>
+                <div class="weekly-summary">
+                    <div class="week-day" data-day="monday">
+                        <div class="day-name">Mon</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="tuesday">
+                        <div class="day-name">Tue</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="wednesday">
+                        <div class="day-name">Wed</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="thursday">
+                        <div class="day-name">Thu</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="friday">
+                        <div class="day-name">Fri</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="saturday">
+                        <div class="day-name">Sat</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                    <div class="week-day" data-day="sunday">
+                        <div class="day-name">Sun</div>
+                        <div class="day-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="day-count">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="export-section">
+            <h3><i class="fas fa-download"></i> Export Analytics</h3>
+            <div class="export-options">
+                <button id="export-pdf" class="btn primary">
+                    <i class="fas fa-file-pdf"></i>
+                    Export as PDF
+                </button>
+                <button id="export-csv" class="btn secondary">
+                    <i class="fas fa-file-csv"></i>
+                    Export as CSV
+                </button>
+                <button id="export-json" class="btn secondary">
+                    <i class="fas fa-file-code"></i>
+                    Export as JSON
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="analytics-loading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Calculating analytics...</p>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/analytics.js"></script>
+</body>
+</html>
