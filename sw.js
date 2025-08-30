@@ -17,8 +17,9 @@ const STATIC_FILES = [
   '/css/animations.css',
   '/css/responsive.css',
   '/css/components.css',
+  '/css/advanced-features.css',
   
-  // JavaScript Files
+  // Core JavaScript Files
   '/js/app.js',
   '/js/storage.js',
   '/js/settings.js',
@@ -27,6 +28,19 @@ const STATIC_FILES = [
   '/js/utils.js',
   '/js/categories.js',
   '/js/shortcuts.js',
+  '/js/api-client.js',
+  '/js/category-manager.js',
+  '/js/datetime-picker.js',
+  
+  // Advanced Feature Modules
+  '/js/timer.js',
+  '/js/templates.js',
+  '/js/productivity-insights.js',
+  '/js/smart-notifications.js',
+  '/js/recurring-tasks.js',
+  '/js/advanced-search.js',
+  '/js/focus-mode.js',
+  '/js/comprehensive-shortcuts.js',
   
   // Icons
   '/icons/icon-192.svg',
@@ -99,7 +113,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   
-  // Skip non-GET requests
+  // Handle API requests with offline support
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(handleApiRequest(request));
+    return;
+  }
+  
+  // Skip non-GET requests for non-API endpoints
   if (request.method !== 'GET') {
     return;
   }
@@ -228,28 +248,154 @@ function isHTMLRequest(request) {
   return request.headers.get('Accept')?.includes('text/html');
 }
 
-// Background Sync - For offline task creation
+// Handle API requests with offline support
+async function handleApiRequest(request) {
+  const url = new URL(request.url);
+  const cacheKey = `api-${request.method}-${url.pathname}${url.search}`;
+  
+  try {
+    // For GET requests, try cache first for offline capability
+    if (request.method === 'GET') {
+      const cachedResponse = await caches.match(cacheKey);
+      
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse.ok) {
+          const cache = await caches.open(DYNAMIC_CACHE_NAME);
+          cache.put(cacheKey, networkResponse.clone());
+          return networkResponse;
+        }
+      } catch (error) {
+        // Network failed, return cached version if available
+        if (cachedResponse) {
+          console.log('API offline: returning cached response for', url.pathname);
+          return cachedResponse;
+        }
+      }
+      
+      return cachedResponse || new Response(
+        JSON.stringify({ error: 'Offline - data not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // For non-GET requests, queue them if offline
+    if (request.method !== 'GET') {
+      try {
+        return await fetch(request);
+      } catch (error) {
+        // Queue the request for later
+        await queueOfflineRequest(request);
+        return new Response(
+          JSON.stringify({ success: true, queued: true, message: 'Request queued for when online' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+  } catch (error) {
+    console.error('API request handling failed:', error);
+    return new Response(
+      JSON.stringify({ error: 'Request failed' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// Queue offline requests for later sync
+async function queueOfflineRequest(request) {
+  try {
+    const requestData = {
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+      body: request.method !== 'GET' ? await request.text() : null,
+      timestamp: Date.now()
+    };
+    
+    // Store in IndexedDB or localStorage
+    const queue = await getOfflineQueue();
+    queue.push(requestData);
+    await saveOfflineQueue(queue);
+    
+    // Register for background sync
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      await self.registration.sync.register('offline-requests');
+    }
+  } catch (error) {
+    console.error('Failed to queue offline request:', error);
+  }
+}
+
+// Background Sync - Process queued requests
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync-tasks') {
-    event.waitUntil(syncTasks());
+  if (event.tag === 'offline-requests') {
+    event.waitUntil(processOfflineQueue());
   }
 });
 
-async function syncTasks() {
+async function processOfflineQueue() {
   try {
-    // This would sync any offline-created tasks when connection is restored
-    console.log('Background sync: Syncing tasks...');
+    console.log('Background sync: Processing offline queue...');
+    const queue = await getOfflineQueue();
+    const processedRequests = [];
     
-    // Implementation would depend on your backend API
-    // For now, this is just a placeholder since we're using localStorage
+    for (const requestData of queue) {
+      try {
+        const response = await fetch(requestData.url, {
+          method: requestData.method,
+          headers: requestData.headers,
+          body: requestData.body
+        });
+        
+        if (response.ok) {
+          processedRequests.push(requestData);
+          console.log('Synced offline request:', requestData.method, requestData.url);
+        }
+      } catch (error) {
+        console.log('Failed to sync request:', requestData.url, error);
+      }
+    }
     
-    // Notify the main app that sync completed
+    // Remove processed requests from queue
+    if (processedRequests.length > 0) {
+      const remainingQueue = queue.filter(req => 
+        !processedRequests.some(processed => 
+          processed.url === req.url && processed.timestamp === req.timestamp
+        )
+      );
+      await saveOfflineQueue(remainingQueue);
+    }
+    
+    // Notify the main app
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
-      client.postMessage({ type: 'SYNC_COMPLETED' });
+      client.postMessage({ 
+        type: 'SYNC_COMPLETED', 
+        processedCount: processedRequests.length,
+        remainingCount: queue.length - processedRequests.length
+      });
     });
   } catch (error) {
     console.error('Background sync failed:', error);
+  }
+}
+
+// Offline queue management
+async function getOfflineQueue() {
+  try {
+    const queueData = localStorage.getItem('offline-requests-queue');
+    return queueData ? JSON.parse(queueData) : [];
+  } catch (error) {
+    console.error('Failed to get offline queue:', error);
+    return [];
+  }
+}
+
+async function saveOfflineQueue(queue) {
+  try {
+    localStorage.setItem('offline-requests-queue', JSON.stringify(queue));
+  } catch (error) {
+    console.error('Failed to save offline queue:', error);
   }
 }
 
@@ -338,11 +484,71 @@ self.addEventListener('message', (event) => {
         event.ports[0].postMessage({ cacheSize: size });
       }));
       break;
+    case 'GET_OFFLINE_STATUS':
+      event.waitUntil(getOfflineStatus().then(status => {
+        event.ports[0].postMessage({ offlineStatus: status });
+      }));
+      break;
+    case 'CLEAR_OFFLINE_QUEUE':
+      event.waitUntil(clearOfflineQueue());
+      break;
     case 'SKIP_WAITING':
       self.skipWaiting();
       break;
   }
 });
+
+// Get offline status and queue information
+async function getOfflineStatus() {
+  try {
+    const queue = await getOfflineQueue();
+    const cacheSize = await getCacheSize();
+    
+    return {
+      isOnline: navigator.onLine,
+      queuedRequests: queue.length,
+      cacheSize: cacheSize.formattedSize,
+      lastSync: await getLastSyncTime()
+    };
+  } catch (error) {
+    console.error('Failed to get offline status:', error);
+    return {
+      isOnline: navigator.onLine,
+      queuedRequests: 0,
+      cacheSize: '0 B',
+      lastSync: 'Never'
+    };
+  }
+}
+
+// Clear offline queue
+async function clearOfflineQueue() {
+  try {
+    localStorage.removeItem('offline-requests-queue');
+    console.log('Offline queue cleared');
+  } catch (error) {
+    console.error('Failed to clear offline queue:', error);
+  }
+}
+
+// Get last sync time
+async function getLastSyncTime() {
+  try {
+    const lastSync = localStorage.getItem('last-sync-time');
+    return lastSync ? new Date(lastSync).toLocaleString() : 'Never';
+  } catch (error) {
+    return 'Never';
+  }
+}
+
+// Update last sync time
+async function updateLastSyncTime() {
+  try {
+    localStorage.setItem('last-sync-time', new Date().toISOString());
+  } catch (error) {
+    console.error('Failed to update sync time:', error);
+  }
+}
 
 // Cache additional URLs dynamically
 async function cacheUrls(urls) {

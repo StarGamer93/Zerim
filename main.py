@@ -75,6 +75,42 @@ class TaskCreate(BaseModel):
     reminder_enabled: bool = False
     reminder_time: Optional[datetime] = None
 
+class TaskTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    title_template: str
+    description_template: Optional[str] = None
+    priority: Priority = Priority.MEDIUM
+    category_id: Optional[str] = None
+    estimated_duration: Optional[int] = None
+    tags: List[str] = []
+    is_public: bool = False
+    usage_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.now)
+
+class TimeEntry(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    task_id: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    duration: Optional[int] = None  # seconds
+    type: str = "manual"  # manual, pomodoro, timer
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+class PomodoroSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    task_id: Optional[str] = None
+    work_duration: int = 25  # minutes
+    break_duration: int = 5  # minutes
+    sessions_completed: int = 0
+    is_active: bool = False
+    current_phase: str = "work"  # work, break, long_break
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -121,6 +157,9 @@ app = FastAPI(
 # In-memory storage (in production, use a proper database)
 tasks: List[Task] = []
 categories: List[Category] = []
+task_templates: List[TaskTemplate] = []
+time_entries: List[TimeEntry] = []
+pomodoro_sessions: List[PomodoroSession] = []
 
 # Initialize default categories
 default_categories = [
@@ -132,6 +171,43 @@ default_categories = [
     Category(name="Home", color="#06B6D4", icon="🏠", description="Household chores and maintenance")
 ]
 categories.extend(default_categories)
+
+# Initialize default task templates
+default_templates = [
+    TaskTemplate(
+        name="Daily Standup",
+        title_template="Daily Standup - {date}",
+        description_template="- What did I do yesterday?\n- What will I do today?\n- Any blockers?",
+        priority=Priority.MEDIUM,
+        category_id=None,
+        estimated_duration=15,
+        tags=["meeting", "daily"]
+    ),
+    TaskTemplate(
+        name="Weekly Review",
+        title_template="Weekly Review - Week of {date}",
+        description_template="1. Review last week's goals\n2. Plan upcoming week\n3. Identify improvements",
+        priority=Priority.HIGH,
+        estimated_duration=60,
+        tags=["review", "planning"]
+    ),
+    TaskTemplate(
+        name="Bug Report",
+        title_template="Bug: {issue}",
+        description_template="Steps to reproduce:\n1. \n2. \n3. \n\nExpected: \nActual: \n\nEnvironment:",
+        priority=Priority.HIGH,
+        tags=["bug", "development"]
+    ),
+    TaskTemplate(
+        name="Research Task",
+        title_template="Research: {topic}",
+        description_template="Research goals:\n- \n\nKey questions:\n- \n\nDeliverables:\n- ",
+        priority=Priority.MEDIUM,
+        estimated_duration=120,
+        tags=["research", "learning"]
+    )
+]
+task_templates.extend(default_templates)
 
 # CORS middleware
 app.add_middleware(
@@ -210,10 +286,12 @@ async def get_tasks(
     # Sort by created_at descending
     filtered_tasks.sort(key=lambda x: x.created_at, reverse=True)
     
-    # Apply pagination
-    if limit:
-        filtered_tasks = filtered_tasks[offset:offset + limit]
-    else:
+    # Apply pagination  
+    if limit and limit > 0:
+        start_index = offset if offset is not None else 0
+        end_index = start_index + limit
+        filtered_tasks = filtered_tasks[start_index:end_index]
+    elif offset and offset > 0:
         filtered_tasks = filtered_tasks[offset:]
     
     return filtered_tasks
@@ -564,6 +642,272 @@ def get_monthly_stats():
     
     return monthly_stats
 
+# Task Templates Endpoints
+@app.get("/api/templates", response_model=List[TaskTemplate])
+async def get_task_templates():
+    """Get all task templates"""
+    return task_templates
+
+@app.post("/api/templates", response_model=TaskTemplate, status_code=201)
+async def create_task_template(template: TaskTemplate):
+    """Create a new task template"""
+    task_templates.append(template)
+    return template
+
+@app.post("/api/templates/{template_id}/use", response_model=Task, status_code=201)
+async def create_task_from_template(template_id: str, data: Dict[str, Any] = Body(...)):
+    """Create a task from a template"""
+    template = next((t for t in task_templates if t.id == template_id), None)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Replace placeholders in template
+    title = template.title_template
+    description = template.description_template or ""
+    
+    for key, value in data.items():
+        title = title.replace(f"{{{key}}}", str(value))
+        description = description.replace(f"{{{key}}}", str(value))
+    
+    # Create task from template
+    task_data = TaskCreate(
+        title=title,
+        description=description,
+        priority=template.priority,
+        category_id=template.category_id,
+        estimated_duration=template.estimated_duration,
+        tags=template.tags.copy()
+    )
+    
+    task = Task(**task_data.dict())
+    tasks.append(task)
+    
+    # Update template usage count
+    template.usage_count += 1
+    
+    return task
+
+@app.delete("/api/templates/{template_id}")
+async def delete_task_template(template_id: str):
+    """Delete a task template"""
+    global task_templates
+    template = next((t for t in task_templates if t.id == template_id), None)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    task_templates = [t for t in task_templates if t.id != template_id]
+    return {"message": "Template deleted successfully"}
+
+# Time Tracking Endpoints
+@app.get("/api/time-entries", response_model=List[TimeEntry])
+async def get_time_entries(task_id: Optional[str] = None):
+    """Get time entries, optionally filtered by task"""
+    filtered_entries = time_entries
+    if task_id:
+        filtered_entries = [e for e in time_entries if e.task_id == task_id]
+    return sorted(filtered_entries, key=lambda x: x.start_time, reverse=True)
+
+@app.post("/api/time-entries", response_model=TimeEntry, status_code=201)
+async def start_time_tracking(entry_data: Dict[str, Any] = Body(...)):
+    """Start time tracking for a task"""
+    time_entry = TimeEntry(
+        task_id=entry_data.get("task_id") or "",
+        start_time=datetime.now(),
+        type=entry_data.get("type", "manual"),
+        notes=entry_data.get("notes")
+    )
+    time_entries.append(time_entry)
+    return time_entry
+
+@app.put("/api/time-entries/{entry_id}/stop", response_model=TimeEntry)
+async def stop_time_tracking(entry_id: str):
+    """Stop time tracking"""
+    entry = next((e for e in time_entries if e.id == entry_id), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Time entry not found")
+    
+    if entry.end_time:
+        raise HTTPException(status_code=400, detail="Time tracking already stopped")
+    
+    entry.end_time = datetime.now()
+    entry.duration = int((entry.end_time - entry.start_time).total_seconds())
+    
+    # Update task's actual duration
+    task = next((t for t in tasks if t.id == entry.task_id), None)
+    if task:
+        current_duration = task.actual_duration or 0
+        task.actual_duration = current_duration + (entry.duration // 60)  # Convert to minutes
+        task.updated_at = datetime.now()
+    
+    return entry
+
+@app.delete("/api/time-entries/{entry_id}")
+async def delete_time_entry(entry_id: str):
+    """Delete a time entry"""
+    global time_entries
+    entry = next((e for e in time_entries if e.id == entry_id), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Time entry not found")
+    
+    time_entries = [e for e in time_entries if e.id != entry_id]
+    return {"message": "Time entry deleted successfully"}
+
+# Pomodoro Timer Endpoints
+@app.get("/api/pomodoro/active", response_model=Optional[PomodoroSession])
+async def get_active_pomodoro():
+    """Get currently active pomodoro session"""
+    active_session = next((p for p in pomodoro_sessions if p.is_active), None)
+    return active_session
+
+@app.post("/api/pomodoro/start", response_model=PomodoroSession, status_code=201)
+async def start_pomodoro(session_data: Dict[str, Any] = Body(...)):
+    """Start a new pomodoro session"""
+    # End any existing active session
+    for session in pomodoro_sessions:
+        if session.is_active:
+            session.is_active = False
+            session.end_time = datetime.now()
+    
+    pomodoro = PomodoroSession(
+        task_id=session_data.get("task_id"),
+        work_duration=session_data.get("work_duration", 25),
+        break_duration=session_data.get("break_duration", 5),
+        is_active=True,
+        start_time=datetime.now()
+    )
+    pomodoro_sessions.append(pomodoro)
+    return pomodoro
+
+@app.put("/api/pomodoro/{session_id}/complete", response_model=PomodoroSession)
+async def complete_pomodoro_phase(session_id: str):
+    """Complete current pomodoro phase (work/break)"""
+    session = next((p for p in pomodoro_sessions if p.id == session_id), None)
+    if not session:
+        raise HTTPException(status_code=404, detail="Pomodoro session not found")
+    
+    if not session.is_active:
+        raise HTTPException(status_code=400, detail="Session is not active")
+    
+    if session.current_phase == "work":
+        session.sessions_completed += 1
+        session.current_phase = "long_break" if session.sessions_completed % 4 == 0 else "break"
+        
+        # Create time entry for completed work session
+        if session.task_id:
+            time_entry = TimeEntry(
+                task_id=session.task_id or "",
+                start_time=session.start_time or datetime.now(),
+                end_time=datetime.now(),
+                duration=session.work_duration * 60,  # Convert to seconds
+                type="pomodoro",
+                notes=f"Pomodoro session {session.sessions_completed}"
+            )
+            time_entries.append(time_entry)
+    else:
+        session.current_phase = "work"
+    
+    session.start_time = datetime.now()
+    return session
+
+@app.put("/api/pomodoro/{session_id}/stop", response_model=PomodoroSession)
+async def stop_pomodoro(session_id: str):
+    """Stop pomodoro session"""
+    session = next((p for p in pomodoro_sessions if p.id == session_id), None)
+    if not session:
+        raise HTTPException(status_code=404, detail="Pomodoro session not found")
+    
+    session.is_active = False
+    session.end_time = datetime.now()
+    return session
+
+# Advanced Analytics Endpoints
+@app.get("/api/analytics/productivity-score")
+async def get_productivity_score():
+    """Calculate productivity score based on task completion and time tracking"""
+    if not tasks:
+        return {"score": 0, "trend": "neutral", "insights": []}
+    
+    now = datetime.now()
+    week_ago = now - timedelta(days=7)
+    
+    # Calculate completion rate
+    total_tasks = len(tasks)
+    completed_tasks = len([t for t in tasks if t.completed])
+    completion_rate = (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+    
+    # Calculate on-time completion rate
+    on_time_completed = len([
+        t for t in tasks 
+        if t.completed and t.due_date and t.completed_at and t.completed_at <= t.due_date
+    ])
+    total_with_due_dates = len([t for t in tasks if t.due_date])
+    on_time_rate = (on_time_completed / total_with_due_dates) * 100 if total_with_due_dates > 0 else 100
+    
+    # Calculate focus score from time tracking
+    recent_entries = [e for e in time_entries if e.start_time >= week_ago]
+    avg_session_length = 0
+    if recent_entries:
+        total_duration = sum(e.duration or 0 for e in recent_entries)
+        avg_session_length = total_duration / len(recent_entries) / 60  # minutes
+    
+    # Calculate overall score
+    score = (completion_rate * 0.4) + (on_time_rate * 0.3) + (min(avg_session_length / 25, 1) * 30)
+    
+    # Generate insights
+    insights = []
+    if completion_rate < 50:
+        insights.append("Consider breaking down large tasks into smaller ones")
+    if on_time_rate < 70:
+        insights.append("Try setting more realistic due dates")
+    if avg_session_length < 15:
+        insights.append("Focus on longer work sessions for better productivity")
+    
+    trend = "improving" if score > 75 else "declining" if score < 40 else "stable"
+    
+    return {
+        "score": round(score, 1),
+        "trend": trend,
+        "completion_rate": round(completion_rate, 1),
+        "on_time_rate": round(on_time_rate, 1),
+        "avg_session_length": round(avg_session_length, 1),
+        "insights": insights
+    }
+
+@app.get("/api/analytics/time-distribution")
+async def get_time_distribution():
+    """Get time distribution across categories and priorities"""
+    category_time = {}
+    priority_time = {}
+    
+    for entry in time_entries:
+        if not entry.duration:
+            continue
+            
+        task = next((t for t in tasks if t.id == entry.task_id), None)
+        if not task:
+            continue
+        
+        duration_hours = entry.duration / 3600
+        
+        # Category distribution
+        category_name = "Uncategorized"
+        if task.category_id:
+            category = next((c for c in categories if c.id == task.category_id), None)
+            if category:
+                category_name = category.name
+        
+        category_time[category_name] = category_time.get(category_name, 0) + duration_hours
+        
+        # Priority distribution
+        priority_name = task.priority.value.title()
+        priority_time[priority_name] = priority_time.get(priority_name, 0) + duration_hours
+    
+    return {
+        "categories": category_time,
+        "priorities": priority_time,
+        "total_hours": sum(category_time.values())
+    }
+
 # Health check endpoint
 @app.get("/api/health")
 async def health_check():
@@ -572,7 +916,10 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "tasks_count": len(tasks),
-        "categories_count": len(categories)
+        "categories_count": len(categories),
+        "templates_count": len(task_templates),
+        "time_entries_count": len(time_entries),
+        "active_pomodoros": len([p for p in pomodoro_sessions if p.is_active])
     }
 
 if __name__ == "__main__":
